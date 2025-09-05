@@ -22,8 +22,14 @@ public class Employee {
     private String identificacion;
     private String cargo;
     private String departamento;
+
     @Column(nullable = true)
     private LocalDate fechaIngreso;
+
     @Column(nullable = true)
     private LocalDate fechaSalida;
+
+    // 👇 Nuevo campo: controla si el empleado tiene acceso al sistema/kiosko
+    @Column(nullable = false)
+    private boolean activo = true;
 }

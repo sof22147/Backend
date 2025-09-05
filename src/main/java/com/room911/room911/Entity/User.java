@@ -6,15 +6,28 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+// Jackson
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+// OpenAPI/Swagger
+import io.swagger.v3.oas.annotations.media.Schema;
+
 @Entity
 @Table(name = "users")
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String correo;
+
+    // ⬇⬇⬇ EL CAMBIO CLAVE
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)     // no sale en respuestas
+    @Schema(accessMode = Schema.AccessMode.WRITE_ONLY)         // Swagger: solo como entrada
     private String contraseña;
+    // ⬆⬆⬆
+
     private String rol;
 
     // Getters y setters
