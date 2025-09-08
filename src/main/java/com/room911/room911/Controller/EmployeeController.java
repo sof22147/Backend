@@ -2,14 +2,14 @@ package com.room911.room911.Controller;
 
 import com.room911.room911.Entity.Employee;
 import com.room911.room911.Service.EmployeeService;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile; // Import MultipartFile
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -23,9 +23,9 @@ public class EmployeeController {
     public ResponseEntity<?> registrarEmpleado(@RequestBody Employee empleado) {
         try {
             Employee nuevo = employeeService.registrarEmpleado(empleado);
-            return ResponseEntity.status(201).body(nuevo);
+            return ResponseEntity.status(HttpStatus.CREATED).body(nuevo);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
         }
     }
 
@@ -34,33 +34,46 @@ public class EmployeeController {
         return employeeService.obtenerTodos();
     }
 
-    @GetMapping("/{id}") // New GET endpoint by ID
+    @GetMapping("/{id}")
     public ResponseEntity<Employee> obtenerEmpleadoPorId(@PathVariable Long id) {
         Optional<Employee> empleado = employeeService.obtenerPorId(id);
-        return empleado.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return empleado.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
-    @PutMapping("/{id}") // New PUT endpoint to update employee
+    @PutMapping("/{id}")
     public ResponseEntity<?> actualizarEmpleado(@PathVariable Long id, @RequestBody Employee empleado) {
         try {
             Employee empleadoActualizado = employeeService.actualizarEmpleado(id, empleado);
             return ResponseEntity.ok(empleadoActualizado);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(404).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         }
     }
 
-    @PostMapping("/upload-csv")
+    // 👇 NUEVO: habilitar / deshabilitar empleado (solo cambia el campo 'activo')
+    @PatchMapping("/{id}/estado")
+    public ResponseEntity<?> actualizarEstadoEmpleado(@PathVariable Long id,
+                                                      @RequestParam boolean activo) {
+        try {
+            Employee actualizado = employeeService.actualizarEstado(id, activo);
+            return ResponseEntity.ok(actualizado);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // 👇 IMPORTANTE: especificar que consume multipart/form-data
+    @PostMapping(value = "/upload-csv", consumes = "multipart/form-data")
     public ResponseEntity<?> uploadCsv(@RequestParam("file") MultipartFile file) {
-        if (file.isEmpty()) {
-            return new ResponseEntity<>("Por favor, selecciona un archivo CSV para subir.", HttpStatus.BAD_REQUEST);
+        if (file == null || file.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Por favor, selecciona un archivo CSV para subir."));
         }
         try {
             employeeService.saveEmployeesFromCsv(file);
-            return new ResponseEntity<>("Empleados importados exitosamente desde el CSV.", HttpStatus.OK);
+            return ResponseEntity.ok(Map.of("message", "Empleados importados exitosamente desde el CSV."));
         } catch (Exception e) {
-            return new ResponseEntity<>("Error al procesar el archivo CSV: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al procesar el archivo CSV: " + e.getMessage()));
         }
     }
 }

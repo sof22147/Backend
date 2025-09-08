@@ -6,4 +6,5 @@ import com.room911.room911.Entity.Employee;
 
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     boolean existsByIdentificacion(String identificacion);
+
 }
